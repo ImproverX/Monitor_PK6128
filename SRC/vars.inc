@@ -10,7 +10,7 @@ MARKV:	.EQU	0FDA0h	; =MARK		l*1
 #define VektLen	382	; размер модуля векторов 1, для ПП переноса
 #define Vekt2Ln	(TABV2L-VEKT2L+1)/2	; размер модуля векторов 2, для ПП переноса
 #define LogoAdr 04000h	; начало logo.obj
-#define LogoLen	1483	; размер logo.obj, для выравнивания
+#define LogoLen	1479	; размер logo.obj, для выравнивания
 ;
 MBIOS:	.EQU	07600h	; =L_7800	адреса из основного модуля
 IO7803:	.EQU	07603h	; =L_7803	@KEY -- ввод символа с клавиатуры
