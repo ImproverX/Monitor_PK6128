@@ -200,8 +200,6 @@ L_54F5:	CALL	L_7803	; ? @KEY
 ;
 L_5509:	XRA  A		; <<< G
 	STA     D_6626
-VxHS1:	STA	HSTEK
-VxHS2:	STA	HSTEK+1	; обнуляем адрес возврата, на всякий случай
 	LDA     D_662C	; = 0 (норм.)/ FF (запуск с минусом)
 	ORA  A
 	JZ	L_550Z
@@ -292,11 +290,11 @@ VxR51:	LXI  H, RST5V
 	POP  D
 	POP  B
 	POP  PSW
-	POP  H
+	POP  H		; SP
 	SPHL
-	LHLD	D_66F8
-VxRS1:	SHLD	RxSTAV+1	; PUSH H ; адрес запуска
-	LHLD	D_66F6
+	LHLD	D_66F8	; PS
+VxRS1:	SHLD	RxSTAV+1	; адрес запуска
+	LHLD	D_66F6	; HL
 VxRN1:	JMP	RUNV
 ;	EI
 ;	RET
@@ -2264,15 +2262,15 @@ L_602A:	SUI	041h
 	PCHL
 ;
 D_6041:	.dw L_6075	; A
-	.dw L_9100	; B, BM +++ L_5FF6 / 6318
+	.dw L_9100	; B, BM +++
 	.dw L_6090	; C
 	.dw L_5C50	; D
 	.dw L_60B3	; E
 	.dw L_60E9	; F
-	.dw L_5509	; G +'-G'(с переключением на экран 1)	/// зацикленность при запуске после G100,105 // стек 0000!
+	.dw L_5509	; G +'-G'(с переключением на экран 1)
 	.dw L_55CE	; H
 	.dw L_56A9	; I
-	.dw L_9330	; J +++ 6318
+	.dw L_9330	; J +++
 	.dw L_56FC	; K
 	.dw L_5D2D	; L
 	.dw L_6104	; M
@@ -2282,13 +2280,13 @@ D_6041:	.dw L_6075	; A
 	.dw L_61C5	; Q
 	.dw L_5908	; R
 	.dw L_5A27	; S
-	.dw L_5AB3	; -T
-	.dw L_5AAE	; -U
+	.dw L_5AB3	; T
+	.dw L_5AAE	; U
 	.dw L_5AF2	; V
 	.dw L_5B29	; W
 	.dw L_5BC3	; X
-	.dw L_9350	; Y +++ 6318
-	.dw L_9400	; Z +++ 6318 показать экран 1
+	.dw L_9350	; Y +++
+	.dw L_9400	; Z + показать экран 1
 ;
 L_6075:	CALL	L_630D	; разбор параметров	; <<< A
 	ORA  A
@@ -2311,21 +2309,17 @@ L_6090:	CALL	L_630D	; <<< C
 	POP  D
 	XCHG
 	DI
-VxHS3:	LXI SP, HSTEK
-	PUSH H
-	LXI  H, L_6000	; рестарт, адрес возврата
-	XTHL
-	PUSH H		; адрес запуска в стек
+VxHS1:	LXI SP, HSTEK
 	DCR  A
 	JZ	L_60AC
 	DCR  A
 	JZ	L_60AF
-VxRN2:	JMP	RUNV
+VxRN2:	JMP	RUNCV
 ;	PCHL		; >> переход к подпрограмме с передачей значений BC и DE
 ;
 L_60AC:	LXI  B, M_0000	;
 L_60AF:	LXI  D, M_0000	;
-VxRN3:	JMP	RUNV
+VxRN3:	JMP	RUNCV
 ;	PCHL		; >> переход к подпрограмме без передачи значений ВС и/или DE
 ;
 L_60B3:	CALL	L_62A7	; <<< E
@@ -2691,9 +2685,9 @@ L_62AF:	CALL	L_63C7
 	PUSH H
 	CALL	L_63C7
 	PUSH H
-	CALL	L_63C7
-	POP  D
-	POP  B
+	CALL	L_63C7	; HL - параметр 1
+	POP  D		; параметр 3
+	POP  B		; параметр 2
 	RET
 ;
 L_62BD:	MOV  A, B	; << сравнение BC и DE
@@ -8030,7 +8024,7 @@ D_7FFE:	.dw 00000h	; адрес стека
 VEKT2:	.ORG	07E00h
 #define STEK1	07F80h	; для CALL 5, BIOS
 #define STEK2	08000h	; для RST 7
-#define STEK3	L_BIOS	; для RST 5 0FF00h
+#define STEK3	L_BIOS	; для RST 5 07F00h
 ;
 L_CAL5:	DI
 	LXI  H,	0
@@ -8072,11 +8066,15 @@ L_RST5: DI
 	POP  H		; адрес возврата
 	DCX  H
 	SHLD	L_R5AD+1
-	PUSH PSW
+	PUSH PSW	; сохраняем признаки
 	LXI  H, 00002h	; ?
 	DAD SP
 	POP  PSW
-	LXI SP,	STEK3
+	STA	L_R5A+1
+	MVI  A, B_MONR	; ОЗУ: {Банк 0 R | Банк 2 W}, Банк 1
+	OUT     00Eh	; режим ОЗУ
+L_R5A:	MVI  A, 0	; A
+	LXI SP,	STEK3	; стек в Банке 2
 	PUSH PSW	; =PSW
 	PUSH H		; =SP
 L_R5HL:	LXI  H, 0
@@ -8130,16 +8128,29 @@ RUN:	STA	Rx01+1	; <<< запуск программ
 	OUT	00Eh	; режим ОЗУ
 Rx01:	MVI  A, 0
 	STA	Rx02+8001h
-	SHLD	Rx03+1
+	SHLD	Rx03+8001h
 RxSTA:	LXI  H, 0	; < сюда пишется адрес перехода
 	SHLD	RxSTB+8001h
-Rx03:	LXI  H, 0	; восстанавливаем HL
 	MVI  A, 0	; ОЗУ: Банк 0, Банк 1
 	OUT	00Eh	; режим ОЗУ
 			; ============================
 Rx02:	MVI  A, 0	; восстанавливаем A
+Rx03:	LXI  H, 0	; восстанавливаем HL
 	EI
 RxSTB:	JMP	0	; >>
+;
+RUNC:	XRA  A		; ОЗУ: Банк 0, Банк 1	<<< запуск программ C
+	OUT	00Eh	; режим ОЗУ
+			; ============================
+	PUSH H
+	LXI  H, RRET
+	XTHL		; адрес возврата в стек
+	EI
+	PCHL		; >> переход к подпрограмме с передачей значений BC и DE
+;
+RRET:	MVI  A, B_MON	; ОЗУ: Банк 2, Банк 1	<<< возврат из C
+	OUT     00Eh	; режим ОЗУ
+	JMP	L_6000	; рестарт
 ;
 	.ORG	L_CAL5+100h	;07F00h
 L_BIOS:	JMP	INIT	; +00	@INIT	-- рестарт
@@ -8169,19 +8180,15 @@ V_MB:	.DW	L_5FC3+1	;
 V_RN:	.DW	VxRN1+1 ;
 	.DW	RUN	;RUNV
 	.DW	VxRN2+1 ;
-	.DW	RUN	;RUNV
+	.DW	RUNC	;RUNCV
 	.DW	VxRN3+1 ;
-	.DW	RUN	;RUNV
+	.DW	RUNC	;RUNCV
 V_RS:	.DW	VxRS1+1	;
 	.DW	RxSTA+1	;RxSTAV+1
 V_HS:	.DW	D_66F4	;
 	.DW	L_CAL5-10h	;HSTEK
 	.DW	VxHS1+1	;
 	.DW	L_CAL5-10h	;HSTEK
-	.DW	VxHS3+1	;
-	.DW	L_CAL5-10h	;HSTEK
-	.DW	VxHS2+1	;
-	.DW	L_CAL5-10h+1	;HSTEK+1
 	.DW	0	; конец исправлений
 	.DW	0
 ;
