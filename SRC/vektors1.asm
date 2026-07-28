@@ -47,7 +47,7 @@ L_RST5: DI
 	POP  H		; адрес возврата
 	DCX  H
 	SHLD	L_R5AD+1
-	PUSH PSW
+	PUSH PSW	; сохраняем признаки
 	LXI  H, 00002h	; ?
 	DAD SP
 	POP  PSW
@@ -100,13 +100,25 @@ BIOS02:	CALL	MBIOS	;<<<< изменяется
 	EI
 	RET
 ;
-RUN:	PUSH PSW	; <<< запуск программ
-	XRA  A		; ОЗУ: Банк 0, Банк 1
+RUN:	STA	Rx00+1	; <<< запуск программ G
+	MVI  A, 0	; ОЗУ: Банк 0, Банк 1
 	OUT	00Eh	; режим ОЗУ
-	POP  PSW
+Rx00:	MVI  A, 0
 	EI
 RxSTA:	JMP	0
 ;	RET
+;
+RUNC:	XRA  A		; ОЗУ: Банк 0, Банк 1	<<< запуск программ C
+	OUT	00Eh	; режим ОЗУ
+	PUSH H
+	LXI  H, RRET
+	XTHL		; адрес возврата в стек
+	EI
+	PCHL		; >> переход к подпрограмме с передачей значений BC и DE
+;
+RRET:	MVI  A, B_MON	; ОЗУ: Банк 2, Банк 1	<<< возврат из C
+	OUT     00Eh	; режим ОЗУ
+	JMP	0	; рестарт (-> L_6000)
 ;
 	.ORG	L_CAL5+100h	;0FF00h
 L_BIOS:	JMP	INIT	; +00	@INIT	-- рестарт
