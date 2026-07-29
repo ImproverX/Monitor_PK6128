@@ -1051,7 +1051,7 @@ L_5AAE:	MVI  A, 001h	; <<< U
 ;
 L_5AB3:	MVI  A, 002h	; <<< T
 L_5AB5:	STA     D_662F
-	CALL	L_6499
+	CALL	L_6499	; разбор параметров строки 
 	LXI  H, M_0000	; ?
 	SHLD	D_6632
 	INX  H
@@ -1686,7 +1686,7 @@ D_5EB9:	.dw L_5ED5	; команда JMP
 ;
 L_5ED5:	CALL	L_5FB1
 	JNZ	L_5F35
-L_5EDB:	CALL	L_5FD2
+L_5EDB:	CALL	L_5FD2	; чтение в DE двух байт из стека программы, адрес в D_66F4
 	JMP	L_5F35
 ;
 L_5EE1:	CALL	L_5FB1
@@ -1704,7 +1704,7 @@ L_5EF7:	POP  D
 	PUSH D
 	JMP	L_5F35
 ;
-L_5EFC:	CALL	L_5FD2
+L_5EFC:	CALL	L_5FD2	; чтение в DE двух байт из стека программы, адрес в D_66F4
 	POP  B
 	PUSH B
 	MVI  A, 002h
@@ -1809,7 +1809,7 @@ L_5F7Z:	MOV  A, M
 	JZ	L_5F90
 	CALL	L_5F9F
 	JNC	L_5F90
-	CALL	L_5FD2
+	CALL	L_5FD2	; чтение в DE двух байт из стека программы, адрес в D_66F4
 L_5F90:	POP  PSW
 	DCR  A
 	JZ	L_5F9C
@@ -1862,10 +1862,11 @@ L_5FCZ:	MOV  A, E
 L_5FD0:	ORA  A
 	RET
 ;
-L_5FD2:	LHLD	D_66F4
-	MOV  E, M
-	INX  H
-	MOV  D, M
+L_5FD2:	LHLD	D_66F4	; SP программы
+	CALL	RWORD	; чтение двух байт в DE с адреса HL (банк 0 и банк 1)
+;	MOV  E, M
+;	INX  H
+;	MOV  D, M
 	RET
 ;
 M_DCF0:	.EQU    0DCF0h	;+
@@ -3010,7 +3011,7 @@ L_64AB:	LXI  H, D_663B
 	INX  H
 	CPI	00Dh
 	JZ	L_64ED
-	CPI	02Ch
+	CPI	02Ch	; ","
 	JNZ	L_64C6
 	MVI  A, 080h
 	STA     D_663B
