@@ -1,9 +1,9 @@
 	.ORG	0FDA0h
 MARK:	.db 0FFh	; метка, чтобы ЕДАСМ не писал "мало памяти"
 	.ORG	0FE00h
-#define STEK1	0FF80h	; для CALL 5, BIOS
+#define STEK1	0FFA0h	; для CALL 5, BIOS
 #define STEK2	00000h	; для RST 7
-#define STEK3	L_BIOS	; для RST 5 0FF00h
+#define STEK3	0FFA0h	; для RST 5 0FF00h
 ;
 #include "vars.inc"
 ;
@@ -67,13 +67,15 @@ INIT:	DI
 	JMP	BIOS00
 ;
 BIOS:	DI
+	SHLD	BIOS03+1
+	STA	BIOS04+1
 	POP	H
 	MOV	A,L
 	SUI	3
 BIOS00:	STA	BIOS02+1
 	MVI  A, B_MON	; ОЗУ: Банк 2, Банк 1
 	OUT     00Eh	; режим ОЗУ
-	JNZ	BIOS01
+	JNZ	BIOS01	; >> не INIT
 	MVI  A, 0C3h	; JMP ...
 	STA     M_0000	;
 	STA     M_0005	;
@@ -86,17 +88,18 @@ BIOS00:	STA	BIOS02+1
 	SHLD	M_0038+1	; ... RST7L
 BIOS01:	LXI  H,	0
 	DAD SP
+	SHLD	BIOS05+1	; SP
 	LXI SP,	STEK1
-	PUSH H
+BIOS03:	LXI  H, 0
+BIOS04: MVI  A, 0
 	EI
 BIOS02:	CALL	MBIOS	;<<<< изменяется
 	DI
-	PUSH PSW
-	XRA  A		; ОЗУ: Банк 0, Банк 1
+BIOS05:	LXI  SP, 0
+	STA	BIOS06+1
+	MVI  A, 0	; ОЗУ: Банк 0, Банк 1
 	OUT	00Eh	; режим ОЗУ
-	POP  PSW
-	POP  H
-	SPHL
+BIOS06:	MVI  A, 0	; =========================
 	EI
 	RET
 ;
