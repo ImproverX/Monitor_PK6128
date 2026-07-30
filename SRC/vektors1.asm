@@ -63,19 +63,8 @@ L_R5AD:	LXI  H, 0
 	JMP	M_0028
 ;
 INIT:	DI
-	XRA  A
-	JMP	BIOS00
-;
-BIOS:	DI
-	SHLD	BIOS03+1
-	STA	BIOS04+1
-	POP	H
-	MOV	A,L
-	SUI	3
-BIOS00:	STA	BIOS02+1
 	MVI  A, B_MON	; ОЗУ: Банк 2, Банк 1
 	OUT     00Eh	; режим ОЗУ
-	JNZ	BIOS01	; >> не INIT
 	MVI  A, 0C3h	; JMP ...
 	STA     M_0000	;
 	STA     M_0005	;
@@ -86,20 +75,32 @@ BIOS00:	STA	BIOS02+1
 	SHLD	M_0005+1	; ... CALL5L
 	LXI  H, RST7L
 	SHLD	M_0038+1	; ... RST7L
-BIOS01:	LXI  H,	0
+	XRA  A
+	JMP	BIOS01
+;
+BIOS:	DI
+	XCHG
+	POP	H
+	MOV  B, A
+	MVI  A, B_MON	; ОЗУ: Банк 2, Банк 1
+	OUT     00Eh	; режим ОЗУ
+	MOV  A, L
+	SUI	3
+BIOS01:	STA	BIOS02+1
+	LXI  H,	0
 	DAD SP
 	SHLD	BIOS05+1	; SP
 	LXI SP,	STEK1
-BIOS03:	LXI  H, 0
-BIOS04: MVI  A, 0
+	XCHG
+	MOV  A, B
 	EI
 BIOS02:	CALL	MBIOS	;<<<< изменяется
 	DI
 BIOS05:	LXI  SP, 0
-	STA	BIOS06+1
+	MOV  B, A
 	MVI  A, 0	; ОЗУ: Банк 0, Банк 1
 	OUT	00Eh	; режим ОЗУ
-BIOS06:	MVI  A, 0	; =========================
+	MOV  A, B
 	EI
 	RET
 ;
@@ -128,7 +129,7 @@ L_BIOS:	JMP	INIT	; +00	@INIT	-- рестарт
 	CALL	BIOS	; +03	@KEY	-- ввод символа с клавиатуры,	выход: А = код
 	CALL	BIOS	; +06	@INTAP	-- ввод байта с магнитной ленты, A=FF - с поиском синхробайта, =08 - без поиска, выход А = полученный байт
 	CALL	BIOS	; +09	@CONOUT	-- вывод на экран символа из C
-	CALL	BIOS	; +0C	@OUTAP	-- вывод на МГ байта из C
+	CALL	BIOS	; +0C	@OUTAP	-- вывод на МГ байта из A
 	CALL	BIOS	; +0F	@LIST	-- вывод на принтер символа (с перекодировкой) из C
 	CALL	BIOS	; +12	@CONIN	-- опрос статуса клавиатуры,	выход A=FF - клавиша нажата, =00 - не нажата
 	CALL	BIOS	; +15	@DUMP	-- вывод числа в HEX из A
