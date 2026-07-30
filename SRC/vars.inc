@@ -2,16 +2,16 @@ CALL5V:	.EQU	0FE00h	; =L_CAL5	адреса из vektors
 RST7V:	.EQU	0FE1Bh	; =L_RST7
 RST5V:	.EQU	0FE33h	; =L_RST5
 MBIOSV:	.EQU	0FF00h	; =L_BIOS
-RUNV:	.EQU	0FE9Ch	; =RUN
-RxSTAV:	.EQU	0FEA6h	; =RxSTA
-RUNCV:	.EQU	0FEA9h	; =RUNC
+RUNV:	.EQU	0FEA5h	; =RUN
+RxSTAV:	.EQU	0FEAFh	; =RxSTA
+RUNCV:	.EQU	0FEB2h	; =RUNC
 INITV:	.EQU	MBIOSV	; =L_BIOS
 MARKV:	.EQU	0FDA0h	; =MARK
 ;
 #define VektLen	382	; размер модуля векторов 1, для ПП переноса
 #define Vekt2Ln	(TABV2L-VEKT2L+1)/2	; размер модуля векторов 2, для ПП переноса
 #define LogoAdr 04000h	; начало logo.obj
-#define LogoLen	1479	; размер logo.obj, для выравнивания
+#define LogoLen	1484	; размер logo.obj, для выравнивания
 ;
 MBIOS:	.EQU	07600h	; =L_7800	адреса из основного модуля
 IO7803:	.EQU	07603h	; =L_7803	@KEY -- ввод символа с клавиатуры
