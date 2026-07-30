@@ -8023,9 +8023,9 @@ D_7FFD:	.db 000h	; счётчик циклов в обработчике пре�
 D_7FFE:	.dw 00000h	; адрес стека
 ;
 VEKT2:	.ORG	07E00h
-#define STEK1	07F80h	; для CALL 5, BIOS
+#define STEK1	07FD0h	; для CALL 5, BIOS
 #define STEK2	08000h	; для RST 7
-#define STEK3	L_BIOS	; для RST 5 07F00h
+#define STEK3	07FD0h	; для RST 5
 ;
 L_CAL5:	DI
 	LXI  H,	0
@@ -8038,11 +8038,10 @@ L_CAL5:	DI
 	CALL	M_0005	
 	DI
 	MOV  H, A
-	XRA  A		; ОЗУ: Банк 0, Банк 1
+	MVI  A, 0	; ОЗУ: Банк 0, Банк 1
 	OUT     00Eh	; режим ОЗУ
 	MOV  A, H	; =======================
-LxC5SP:	LXI  H, 0
-	SPHL
+LxC5SP:	LXI SP, 0
 	EI
 	RET
 ;
@@ -8087,11 +8086,19 @@ L_R5AD:	LXI  H, 0
 	JMP	M_0028	; =======================
 ;
 INIT:	DI
+	MVI  A, B_MONR	; ОЗУ: {Банк 0 R | Банк 2 W}, Банк 1
+	OUT     00Eh	; режим ОЗУ
 	XRA  A
 	JMP	BIOS00
 ;
 BIOS:	DI
-	POP	H
+	PUSH PSW
+	MVI  A, B_MONR	; ОЗУ: {Банк 0 R | Банк 2 W}, Банк 1
+	OUT     00Eh	; режим ОЗУ
+	POP  PSW
+	STA	BIOS04+1
+	SHLD	BIOS03+1
+	POP	H	; адрес, откуда был вызов
 	MOV	A,L
 	SUI	3
 BIOS00:	STA	BIOS02+1
@@ -8110,17 +8117,18 @@ BIOS00:	STA	BIOS02+1
 	SHLD	M_0038+1	; ... RST7L
 BIOS01:	LXI  H,	0
 	DAD SP
+	SHLD	BIOS05+1	; SP
 	LXI SP,	STEK1
-	PUSH H
+BIOS03:	LXI  H, 0
+BIOS04: MVI  A, 0
 	EI
 BIOS02:	CALL	MBIOS	;<<<< изменяется
 	DI
-	PUSH PSW
-	XRA  A		; ОЗУ: Банк 0, Банк 1
+BIOS05: LXI SP, 0
+	STA	BIOS06+1
+	MVI  A, 0	; ОЗУ: Банк 0, Банк 1
 	OUT	00Eh	; режим ОЗУ
-	POP  PSW	; =========================
-	POP  H
-	SPHL
+BIOS06:	MVI  A, 0	; =========================
 	EI
 	RET
 ;
