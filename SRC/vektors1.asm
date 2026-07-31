@@ -63,6 +63,8 @@ L_R5AD:	LXI  H, 0
 	JMP	M_0028
 ;
 INIT:	DI
+	PUSH D
+	PUSH B
 	MVI  A, B_MON	; ОЗУ: Банк 2, Банк 1
 	OUT     00Eh	; режим ОЗУ
 	MVI  A, 0C3h	; JMP ...
@@ -80,7 +82,8 @@ INIT:	DI
 ;
 BIOS:	DI
 	XCHG
-	POP	H
+	XTHL		; HL:=адрес вызова, DE->стек; DE:=HL
+	PUSH B		; BC->стек
 	MOV  B, A
 	MVI  A, B_MON	; ОЗУ: Банк 2, Банк 1
 	OUT     00Eh	; режим ОЗУ
@@ -91,7 +94,7 @@ BIOS01:	STA	BIOS02+1
 	DAD SP
 	SHLD	BIOS05+1	; SP
 	LXI SP,	STEK1
-	XCHG
+	XCHG		; восстанавливаем HL
 	MOV  A, B
 	EI
 BIOS02:	CALL	MBIOS	;<<<< изменяется
@@ -101,6 +104,8 @@ BIOS05:	LXI  SP, 0
 	MVI  A, 0	; ОЗУ: Банк 0, Банк 1
 	OUT	00Eh	; режим ОЗУ
 	MOV  A, B
+	POP  B
+	POP  D
 	EI
 	RET
 ;
