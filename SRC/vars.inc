@@ -2,13 +2,15 @@ CALL5V:	.EQU	0FE00h	; =L_CAL5	адреса из vektors
 RST7V:	.EQU	0FE1Bh	; =L_RST7
 RST5V:	.EQU	0FE33h	; =L_RST5
 MBIOSV:	.EQU	0FF00h	; =L_BIOS
-RUNV:	.EQU	0FEA5h	; =RUN
-RxSTAV:	.EQU	0FEAFh	; =RxSTA
-RUNCV:	.EQU	0FEB2h	; =RUNC
+RUNV:	.EQU	0FE8Bh	; =RUN
+RxSTAV:	.EQU	0FE95h	; =RxSTA
+RUNCV:	.EQU	0FE98h	; =RUNC
 INITV:	.EQU	MBIOSV	; =L_BIOS
 MARKV:	.EQU	0FDA0h	; =MARK
+ITx10V:	.EQU	0FF1Fh	; =ITx10
+OTx10V:	.EQU	0FF52h	; =OTx10
 ;
-#define VektLen	382	; размер модуля векторов 1, для ПП переноса
+#define VektLen	417	; размер модуля векторов 1, для ПП переноса
 #define Vekt2Ln	(TABV2L-VEKT2L+1)/2	; размер модуля векторов 2, для ПП переноса
 #define LogoAdr 04000h	; начало logo.obj
 #define LogoLen	1484	; размер logo.obj, для выравнивания
@@ -18,10 +20,10 @@ IO7803:	.EQU	07603h	; =L_7803	@KEY -- ввод символа с клавиат�
 IO7809:	.EQU	07609h	; =L_7809	@CONOUT -- вывод на экран символа из C
 IO7833:	.EQU	07642h	; =L_7833	@SPIC -- вывод строки до 00h с адреса из HL
 ;
-CALL5L:	.EQU	04C80h	; =L_5400	l*1
-RST7L:	.EQU	07B84h	; =L_7D76	l*1
-VEKT2L:	.EQU	07E00h	; =VEKT2	l*1
-TABV2L:	.EQU	07F1Eh	; =V_C5		l*1
+CALL5L:	.EQU	04C80h	; =L_5400
+RST7L:	.EQU	07B73h	; =L_7D76
+VEKT2L:	.EQU	07E00h	; =VEKT2
+TABV2L:	.EQU	07F1Eh	; =V_C5
 ;
 #define B_EKR	0AAh	; ОЗУ: Банк 2, Банк 3 -- подключение экрана
 #define B_MON	088h	; ОЗУ: Банк 2, Банк 1 -- монитор-отладчик
