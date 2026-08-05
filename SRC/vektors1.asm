@@ -1,9 +1,9 @@
 	.ORG	0FDA0h
 MARK:	.db 0FFh	; метка, чтобы ЕДАСМ не писал "мало памяти"
 	.ORG	0FE00h
-#define STEK1	0FFA0h	; для CALL 5, BIOS
+#define STEK1	0FFB0h	; для CALL 5, BIOS
 #define STEK2	00000h	; для RST 7
-#define STEK3	0FFA0h	; для RST 5 0FF00h
+#define STEK3	0FFB0h	; для RST 5 0FF00h
 ;
 #include "vars.inc"
 ;
@@ -63,20 +63,10 @@ L_R5AD:	LXI  H, 0
 	JMP	M_0028
 ;
 INIT:	DI
-	PUSH D
-	PUSH B
+;	PUSH D
+;	PUSH B
 	MVI  A, B_MON	; ОЗУ: Банк 2, Банк 1
 	OUT     00Eh	; режим ОЗУ
-	MVI  A, 0C3h	; JMP ...
-	STA     M_0000	;
-	STA     M_0005	;
-	STA     M_0038	;
-	LXI  H, MBIOS	; рестарт
-	SHLD	M_0000+1	; ... MBIOS
-	LXI  H, CALL5L
-	SHLD	M_0005+1	; ... CALL5L
-	LXI  H, RST7L
-	SHLD	M_0038+1	; ... RST7L
 	XRA  A
 	JMP	BIOS01
 ;
@@ -129,17 +119,94 @@ RRET:	MVI  A, B_MON	; ОЗУ: Банк 2, Банк 1	<<< возврат из C
 	OUT     00Eh	; режим ОЗУ
 	JMP	0	; рестарт (-> L_6000)
 ;
+INTAP:	PUSH B		; @INTAP ввод байта с магнитной ленты
+	PUSH D
+	MVI  C, 000h
+	MOV  D, A
+	IN	001h
+	ANI	010h
+	MOV  E, A
+IT01:	IN	001h
+	ANI	010h
+	CMP  E
+	JZ	IT01
+	RLC
+	RLC
+	RLC
+	RLC
+	MOV  A, C
+	RAL
+	MOV  C, A
+	CALL	IT10
+	IN	001h
+	ANI	010h
+	MOV  E, A
+	MOV  A, D
+	ORA  A
+	JP	IT04	; >> если A < 80h
+	MOV  A, C
+	CPI	0E6h
+	JNZ	IT02
+	XRA  A
+	STA     ITx5+1	;D_7FFB
+	JMP	IT03
+;
+IT02:	CPI	019h
+	JNZ	IT01
+	MVI  A, 0FFh
+	STA     ITx5+1	;D_7FFB
+IT03:	MVI  D, 009h
+IT04:	DCR  D
+	JNZ	IT01
+ITx5:	MVI  A, 0	;LDA     D_7FFB
+	XRA  C
+	POP  D
+	POP  B
+	RET
+;
+IT10:
+ITx10:	MVI  A, 05Bh	;LDA	D_7FF5
+IT11:	DCR  A
+	JNZ	IT11
+	IN	001h
+	ANI	040h
+	JZ	INIT	; рестарт
+	RET
+;
 	.ORG	L_CAL5+100h	;0FF00h
 L_BIOS:	JMP	INIT	; +00	@INIT	-- рестарт
 	CALL	BIOS	; +03	@KEY	-- ввод символа с клавиатуры,	выход: А = код
-	CALL	BIOS	; +06	@INTAP	-- ввод байта с магнитной ленты, A=FF - с поиском синхробайта, =08 - без поиска, выход А = полученный байт
+	JMP	INTAP	; +06	@INTAP	-- ввод байта с магнитной ленты, A=FF - с поиском синхробайта, =08 - без поиска, выход А = полученный байт
 	CALL	BIOS	; +09	@CONOUT	-- вывод на экран символа из C
-	CALL	BIOS	; +0C	@OUTAP	-- вывод на МГ байта из A
+	JMP	OUTAP	; +0C	@OUTAP	-- вывод на МГ байта из A
 	CALL	BIOS	; +0F	@LIST	-- вывод на принтер символа (с перекодировкой) из C
 	CALL	BIOS	; +12	@CONIN	-- опрос статуса клавиатуры,	выход A=FF - клавиша нажата, =00 - не нажата
 	CALL	BIOS	; +15	@DUMP	-- вывод числа в HEX из A
 	CALL	BIOS	; +18	@SPIC	-- вывод строки до 00h с адреса из HL (банк 0 и 1)
 	CALL	BIOS	; +1B	@INKEY	-- чтение с клавиатуры,		выход A=FF - клавиша нажата, =XX - код клавиши
+;
+OUTAP:	PUSH B		; ? @OUTAP << A (число) -- вывод на МГ
+	PUSH PSW
+	MOV  B, A
+	MVI  C, 008h
+OT01:	MOV  A, B
+	RLC
+	MOV  B, A
+	MVI  A, 001h
+	CALL	OT10
+	MVI  A, 000h
+	CALL	OT10
+	DCR  C
+	JNZ	OT01
+	POP  PSW
+	POP  B
+	RET
+;
+OT10:	XRA  B
+	ANI	001h
+	OUT	000h
+OTx10:	MVI  A, 03Ch	;LDA     D_7FF4
+	JMP	IT11
 ;
 FINAL:	.ORG	MARK+FreeSpace-1
 	.db 0
