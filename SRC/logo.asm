@@ -114,7 +114,7 @@ str1:	.db 01Bh, 04Ah			; Стирание экрана
 	.db 00Ah, 00Dh
 ; 	.db "   super monstr-3   "
 ;	.db 00Ah, 00Dh
-	.db " wOLGOGRAD  07.2026 "
+	.db " wOLGOGRAD  08.2026 "
 	.db 00Ah, 00Dh
 	.db 01Bh, 05Eh			; Одинарная ширина символов
 	.db 01Bh, 061h			; Отключение вывода в негативе
