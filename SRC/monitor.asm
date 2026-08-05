@@ -2231,6 +2231,16 @@ D_92F4:;	.db 01Bh, 059h, 021h, 021h	; координата 021h/021h
 D_9387:	.db "    konstanta ~teniq: "
 	.db 000h
 ;
+L_5FFF:	MVI  A, 0C3h	; JMP ...
+	STA     M_0000	;
+	STA     M_0005	;
+	STA     M_0038	;
+	LXI  H, L_7800	;MBIOS	; рестарт
+	SHLD	M_0000+1	; ... MBIOS
+	LXI  H, L_5400	;CALL5L
+	SHLD	M_0005+1	; ... CALL5L
+	LXI  H, L_7D76	;RST7L
+	SHLD	M_0038+1	; ... RST7L
 L_6000:	LXI  SP,MSTEK	;D_66EE	; ? @INIT рестарт =========================================================================
 	CALL	L_6382	; вывод 0Dh,0Ah
 	CALL	L_638C
@@ -2474,7 +2484,7 @@ Lx612Z:	MVI  D, 0
 	DCX  H
 	JMP	L_612A
 ;
-L_6137:	CALL	L_633E
+L_6137:	CALL	L_633E	; <<< N
 	PUSH PSW
 	CALL	L_630D
 	JZ	L_617B
@@ -2483,8 +2493,8 @@ L_6137:	CALL	L_633E
 	ORA  H
 	JNZ	L_6318	; >> Ошибка
 	MOV  B, L
-	LXI  D, D_7FF4
-	LXI  H, D_6719
+	LXI  D, D_7FF4	; начало списка параметров
+	LXI  H, D_6719	; аргументы команды N
 	POP  PSW
 	MVI  C, 004h
 L_6153:	CMP  M
@@ -2508,7 +2518,16 @@ L_616A:	INX  H
 	CPI	002h
 	JNC	L_6318	; >> Ошибка
 L_6176:	MOV  A, B
-	STAX D
+	STAX D		; запись параметра
+	LDA	VxC51+1
+	CPI	CALL5V/100h
+	JNZ	L_6000	; конфигурация не <1>, рестарт
+	LXI  H, D_7FF4	; скорость записи
+	MOV  A, M
+	STA	OTx10V+1
+	INX  H		; скорость чтения
+	MOV  A, M
+	STA	ITx10V+1
 	JMP	L_6000	; рестарт
 ;
 L_617B:	POP  PSW
@@ -6840,7 +6859,7 @@ F_7760:	.db 07Fh	; | ■■■■■■■| (adr. 7760h)
 	.db 07Eh	; | ■■■■■■ | (adr. 77FFh)
 ;
 	.ORG	07600h
-L_7800:	JMP	L_6000	; ? @INIT рестарт
+L_7800:	JMP	L_5FFF	; ? @INIT рестарт
 L_7803:	JMP	L_7EFF	; ? @KEY	-- ввод символа с клавиатуры,	выход: А = код
 L_7806:	JMP	L_7840	; ? @INTAP	-- ввод байта с магнитной ленты, A=FF - с поиском синхробайта, =08 - без поиска, выход А = полученный байт
 L_7809:	JMP	L_793F	; ? @CONOUT	-- вывод на экран символа из C
@@ -6894,7 +6913,7 @@ L_7840:	PUSH B		; ? @INTAP ввод байта с магнитной ленты
 L_784A:	IN	001h
 	ANI	010h
 	CMP  E
-	JZ	L_784A
+	JZ	L_784A	; ожидание сигнала
 	RLC
 	RLC
 	RLC
@@ -6929,44 +6948,36 @@ L_787F:	DCR  D
 	POP  B
 	RET
 ;
-L_788A:	PUSH PSW
-	LDA     D_7FF5
+L_788A:	LDA     D_7FF5
 L_788E:	DCR  A
 	JNZ	L_788E
 	IN	001h
 	ANI	040h
-	JZ	L_7800	; рестарт
-	POP  PSW
+	JZ	L_6000	; рестарт
 	RET
 ;
 L_789B:	PUSH B		; ? @OUTAP << A (число) -- вывод на МГ
-	PUSH D
 	PUSH PSW
-	MOV  D, A
+	MOV  B, A
 	MVI  A, 002h
 	STA     D_7FFC
 	MVI  C, 008h
-L_78A6:	MOV  A, D
+L_78A6:	MOV  A, B
 	RLC
-	MOV  D, A
+	MOV  B, A
 	MVI  A, 001h
-	XRA  D
-	ANI	001h
-	OUT	000h
 	CALL	L_78C5
 	MVI  A, 000h
-	XRA  D
-	ANI	001h
-	OUT	000h
 	CALL	L_78C5
 	DCR  C
 	JNZ	L_78A6
 	POP  PSW
-	POP  D
 	POP  B
 	RET
 ;
-L_78C5:	PUSH PSW
+L_78C5:	XRA  B
+	ANI	001h
+	OUT	000h
 	LDA     D_7FF4
 	JMP	L_788E
 ;
@@ -7014,11 +7025,11 @@ L_7933:	ANI	00Fh
 	ADI	007h
 L_793C:	ADI	030h
 	MOV  C, A
-L_793F:	DI		; ? @CONOUT << C (символ) -- вывод на экран символа
-	PUSH PSW
+L_793F:	PUSH PSW		; ? @CONOUT << C (символ) -- вывод на экран символа
 	PUSH B
 	PUSH D
 	PUSH H
+	DI
 	MVI  A, B_PRG0	; ОЗУ: Банк 2, Банк 0
 	OUT     00Eh	; режим ОЗУ
 	MVI  A, 0C3h	; JMP ...
@@ -7392,42 +7403,34 @@ L_7B80:	MVI  M, 000h
 	MOV  A, C
 	SUI	005h
 	MOV  C, A
-	MVI  H, 0A0h	; начало экрана
+	MVI  D, 0A0h	; начало экрана
+	LXI  H, 0	; очистка строки
 	DI
 	MVI  A, B_EKR	; ОЗУ: Банк 2, Банк 3
 	OUT     00Eh	; режим ОЗУ
 	MVI  A, 0E0h	; конец экрана
-	MVI  D, 000h	; очистка строки
-L_7BA4:	MOV  L, C
-	MOV  M, D
-	INR  L
-	MOV  M, D
-	INR  L
-	MOV  M, D
-	INR  L
-	MOV  M, D
-	INR  L
-	MOV  M, D
-	INR  L
-	MOV  M, D
-	INR  L
-	MOV  M, D
-	INR  L
-	MOV  M, D
-	INR  L
-	MOV  M, D
-	INR  L
-	MOV  M, D
-	INR  L
-	MOV  M, D
-	INR  L
-	MOV  M, D
-	INR  L
-	MOV  M, D
-	INR  L
-	MOV  M, D
-	INR  H
-	CMP  H
+L_7BA4:	MOV  E, C
+	SHLX		; M{DE}:= L, M{DE+1}:=H // возможен мусор, если C не кратно 2 ???
+	INR  E
+	INR  E
+	SHLX		;
+	INR  E
+	INR  E
+	SHLX		;
+	INR  E
+	INR  E
+	SHLX		;
+	INR  E
+	INR  E
+	SHLX		;
+	INR  E
+	INR  E
+	SHLX		;
+	INR  E
+	INR  E
+	SHLX		;
+	INR  D
+	CMP  D	
 	JNZ	L_7BA4
 	MVI  A, B_MON	; ОЗУ: Банк 2, Банк 1
 	OUT     00Eh	; режим ОЗУ
@@ -7655,7 +7658,12 @@ L_7D76:	PUSH PSW	; <<< Обработчик прерывания
 	PUSH B
 	PUSH D
 	PUSH H
+LxPAL:	LXI  B, 0
 	LHLD	D_7FF6	; цвета палитры
+	DSUB
+	JZ	L_7D8Z	; палитра не изменилась, пропускаем
+	LHLD	D_7FF6	; цвета палитры
+	SHLD	LxPAL+1	
 	LXI  D, 0100Fh	; счётчики
 L_7D80:	MOV  A, E
 	OUT	002h
@@ -7666,11 +7674,11 @@ L_7D80:	MOV  A, E
 	MOV  A, H	; цвет текста
 L_7D8C:	OUT	00Ch
 ;	DCR  C
-;	JNZ	L_7D8C	; цикл повторения записи палитры
+;	JNZ	L_7D8C	; цикл повторения записи палитры (на ПК-6128ц++ и в эмуляторах не нужен)
 	DCR  E
 	DCR  D
 	JNZ	L_7D80	; цикл записи палитры
-	LXI  H, D_7FFD
+L_7D8Z:	LXI  H, D_7FFD
 	INR  M
 	MVI  A, 08Ah
 	OUT	000h	; работаем с клавиатурой
@@ -7736,8 +7744,8 @@ L_7DF3:	LDA     D_7FE4
 	OUT	001h	; установка индикатора РУС/ЛАТ
 	LDA     D_7FDE
 	OUT	003h	; сдвиг экрана
-	XRA  A
-	ORI	010h	; 512*256
+;;	XRA  A / ORI 010h
+	MVI  A,	010h	; 512*256
 	OUT	002h	; установка режима экрана
 	RET
 ;
@@ -8086,21 +8094,11 @@ L_R5AD:	LXI  H, 0
 	JMP	M_0028	; =======================
 ;
 INIT:	DI
-	PUSH D
-	PUSH B
+;	PUSH D
+;	PUSH B
 	MVI  A, B_MON	; ОЗУ: Банк 2, Банк 1
 	OUT     00Eh	; режим ОЗУ
-	MVI  A, 0C3h	; JMP ...	; ===========================
-	STA     M_0000	;
-	STA     M_0005	;
-	STA     M_0038	;
-	LXI  H, MBIOS	; рестарт
-	SHLD	M_0000+1	; ... MBIOS
-	LXI  H, L_5400
-	SHLD	M_0005+1	; ... CALL5L
-	LXI  H, L_7D76
-	SHLD	M_0038+1	; ... RST7L
-	XRA  A
+	XRA  A		; ===========================
 	JMP	BIOS01
 ;
 BIOS:	DI
