@@ -21,7 +21,7 @@ IO7809:	.EQU	07609h	; =L_7809	@CONOUT -- вывод на экран символ
 IO7833:	.EQU	07642h	; =L_7833	@SPIC -- вывод строки до 00h с адреса из HL
 ;
 CALL5L:	.EQU	04C80h	; =L_5400
-RST7L:	.EQU	07B73h	; =L_7D76
+RST7L:	.EQU	07B72h	; =L_7D76
 VEKT2L:	.EQU	07E00h	; =VEKT2
 TABV2L:	.EQU	07F1Eh	; =V_C5
 ;
