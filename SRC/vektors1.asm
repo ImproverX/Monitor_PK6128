@@ -1,9 +1,9 @@
 	.ORG	0FDA0h
 MARK:	.db 0FFh	; метка, чтобы ЕДАСМ не писал "мало памяти"
 	.ORG	0FE00h
-#define STEK1	0FFB0h	; для CALL 5, BIOS
+#define STEK1	0FFD0h	; для CALL 5, BIOS
 #define STEK2	00000h	; для RST 7
-#define STEK3	0FFB0h	; для RST 5 0FF00h
+#define STEK3	0FFD0h	; для RST 5 0FF00h
 ;
 #include "vars.inc"
 ;
