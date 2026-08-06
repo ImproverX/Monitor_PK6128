@@ -7116,23 +7116,23 @@ L_79BE:	CPI	001h	; <- !00
 	POP  H
 	CPI	045h
 	MVI  C, 00Ch
-	JZ	L_7CAF
+	JZ	L_7CAF	; сброс экрана
 	CPI	05Dh
-	JZ	L_7CC9
+	JZ	L_7CC9	; Двойная ширина символов
 	CPI	05Eh
-	JZ	L_7CF3
+	JZ	L_7CF3	; Одинарная ширина символов
 	CPI	05Ch
-	JZ	L_7A2E
+	JZ	L_7A2E	; КОИ-7
 	CPI	02Fh
-	JZ	L_7A36
+	JZ	L_7A36	; КОИ-8
 	CPI	05Bh
-	JZ	L_7A36
+	JZ	L_7A36	; КОИ-8
 	CPI	050h
-	JZ	L_7D1B
+	JZ	L_7D1B	; цвет фона / символов
 	CPI	061h
-	JZ	L_7D41
+	JZ	L_7D41	; отключение негатива
 	CPI	062h
-	JZ	L_7D48
+	JZ	L_7D48	; вывод символов в негативе
 	JMP	L_7A84
 ;
 L_7A1E:	MVI  A, 008h
@@ -7283,12 +7283,12 @@ L_7AFF:	PUSH D
 	MOV  D, A
 	CMA
 	MOV  E, A
+	MVI  B, 009h
 	DI
 	MVI  A, B_EKR	; ОЗУ: Банк 2, Банк 3
 	OUT     00Eh	; режим ОЗУ
 	LDA     L_7AC9
 	RRC
-	MVI  B, 009h
 	JMP	L_7B1B
 ;
 L_7B18:	MOV  A, C
@@ -7439,24 +7439,29 @@ L_7BA4:	MOV  E, C
 ;
 L_7BC8:	LXI  H, 00000h	; << стирание экрана
 	DAD  SP
-	SHLD	D_7FFE
+;	SHLD	D_7FFE
 	DI
 	MVI  A, B_EKR	; ОЗУ: Банк 2, Банк 3
 	OUT     00Eh	; режим ОЗУ
 	LXI  SP,M_E000	; конец экрана
 	LXI  B, 00000h	; чем заполнять
-	LXI  D, 0FFF8h	; -8
-	LXI  H, 03FF8h	; счётчик
+	LXI  D, 00400h	; счётчик
 L_7BDC:	PUSH B
 	PUSH B
 	PUSH B
 	PUSH B
-	DAD  D
-	JC	L_7BDC
-	LHLD	D_7FFE
-	SPHL
+	PUSH B
+	PUSH B
+	PUSH B
+	PUSH B
+	DCR  E
+	JNZ	L_7BDC
+	DCR  D
+	JNZ	L_7BDC
 	MVI  A, B_MON	; ОЗУ: Банк 2, Банк 1
 	OUT     00Eh	; режим ОЗУ
+;	LHLD	D_7FFE
+	SPHL
 	EI
 	LXI  H, D_7FDE
 	MVI  M, 0FFh
