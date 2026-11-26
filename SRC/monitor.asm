@@ -12,7 +12,7 @@ L_5400:	MOV  A, C
 	CPI	00Ch
 	LXI  H, L_5431	; L_5430
 	PUSH H
-	RNC
+	RNC		; >11
 	MVI  H, 000h
 	MOV  L, C
 	DAD  H
